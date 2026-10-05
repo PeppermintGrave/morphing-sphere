@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <title>PeppermintGrave // Morphing Sphere</title>
-
   <link rel="icon" type="image/png" href="favicon.png">
+
+  <title>PeppermintGrave // Morphing Sphere</title>
 
   <style>
     * {
@@ -1012,6 +1012,26 @@
       );
     }
 
+    /*
+      Only plain filename characters are accepted.
+
+      Normal:
+        Buddy
+        Hello World
+        PeppermintGrave
+        My-Text
+        My_Text
+
+      Special characters:
+        Killer*
+        Hello!
+        Test?
+        A/B
+        : )
+        etc.
+
+      Special-character text becomes "xxx".
+    */
     function getExportFilename() {
       if (!currentText) {
         return null;
@@ -1034,6 +1054,29 @@
       );
     }
 
+    /*
+      EXPORT
+
+      The live animation is NOT captured.
+
+      A separate Three.js scene is created containing only:
+        • the particle text
+        • black background
+
+      A straight-on orthographic camera is placed in front
+      of the text.
+
+      No:
+        • heading
+        • subtitle
+        • status
+        • signature
+        • input
+        • arrow
+        • PNG button
+        • sphere
+        • UI
+    */
     function exportTextImage() {
       if (
         !currentText ||
@@ -1069,6 +1112,13 @@
           0x000000
         );
 
+      /*
+        Copy the target array.
+
+        The live particle positions can be in the middle
+        of a morph, but textTargets always contains the
+        complete final text.
+      */
       const exportPositions =
         new Float32Array(
           textTargets
@@ -1105,6 +1155,11 @@
           exportMaterial
         );
 
+      /*
+        No rotation.
+
+        This is the front-facing text view.
+      */
       exportParticles.rotation.set(
         0,
         0,
@@ -1115,6 +1170,9 @@
         exportParticles
       );
 
+      /*
+        Find the complete text bounds.
+      */
       let minX = Infinity;
       let maxX = -Infinity;
       let minY = Infinity;
@@ -1170,6 +1228,9 @@
         exportWidth /
         exportHeight;
 
+      /*
+        Extra breathing room around the text.
+      */
       const padding =
         1.28;
 
@@ -1185,6 +1246,9 @@
         halfHeight *
         aspect;
 
+      /*
+        Straight-on camera.
+      */
       const exportCamera =
         new THREE.OrthographicCamera(
           -halfWidth,
@@ -1207,6 +1271,11 @@
         0
       );
 
+      /*
+        Separate renderer.
+
+        This leaves the live renderer alone.
+      */
       const exportRenderer =
         new THREE.WebGLRenderer({
           antialias: true,
@@ -1234,23 +1303,40 @@
         exportCamera
       );
 
-      function cleanup() {
-        exportGeometry.dispose();
-        exportMaterial.dispose();
-        exportRenderer.dispose();
+      /*
+        PNG EXPORT
 
-        exportButton.disabled =
-          false;
+        Do NOT use:
+          URL.createObjectURL()
+          window.open(dataURL)
 
-        exportButton.textContent =
-          "↓ PNG";
-      }
+        The old version used those approaches.
+        On Acode / Android they caused either
+        the DownloadManager blob error or
+        an about:blank page.
 
+        Instead:
+          1. Render to a PNG Blob.
+          2. Turn it into a File with the desired name.
+          3. Use Android's native Web Share API
+             to hand the actual PNG file to the
+             system share/save sheet.
+
+        No blob URL is created.
+      */
       try {
         exportRenderer.domElement.toBlob(
           async function(blob) {
             if (!blob) {
-              cleanup();
+              exportGeometry.dispose();
+              exportMaterial.dispose();
+              exportRenderer.dispose();
+
+              exportButton.disabled =
+                false;
+
+              exportButton.textContent =
+                "↓ PNG";
 
               alert(
                 "PNG export failed."
@@ -1271,14 +1357,12 @@
                 );
 
               /*
-                Android Chrome / supported
-                mobile browsers.
+                Android Chrome / modern browsers
+                supporting file sharing.
 
-                This sends the actual PNG file
-                to the native Android share/save
-                interface.
-
-                No blob: URL is created.
+                This opens the native Android
+                sharing interface instead of
+                navigating to a data URL.
               */
               if (
                 navigator.share &&
@@ -1292,17 +1376,27 @@
                   title: filename
                 });
 
-                cleanup();
+                exportGeometry.dispose();
+                exportMaterial.dispose();
+                exportRenderer.dispose();
+
+                exportButton.disabled =
+                  false;
+
+                exportButton.textContent =
+                  "↓ PNG";
 
                 return;
               }
 
               /*
-                Fallback for browsers that do
-                not support file sharing.
+                Fallback for browsers without
+                file sharing support.
 
-                This uses a data URL directly.
-                It never creates a blob: URL.
+                This does NOT create a blob URL.
+
+                The data URL is used directly
+                with the download attribute.
               */
               const reader =
                 new FileReader();
@@ -1324,9 +1418,6 @@
                     link.download =
                       filename;
 
-                    link.rel =
-                      "noopener";
-
                     link.style.display =
                       "none";
 
@@ -1340,28 +1431,42 @@
                       link
                     );
 
-                    cleanup();
-
                   } catch (error) {
                     console.error(
                       "PNG fallback failed:",
                       error
                     );
 
-                    cleanup();
-
                     alert(
-                      "PNG could not be downloaded."
+                      "Your browser does not support saving this PNG directly."
                     );
                   }
+
+                  exportGeometry.dispose();
+                  exportMaterial.dispose();
+                  exportRenderer.dispose();
+
+                  exportButton.disabled =
+                    false;
+
+                  exportButton.textContent =
+                    "↓ PNG";
                 };
 
               reader.onerror =
                 function() {
-                  cleanup();
+                  exportGeometry.dispose();
+                  exportMaterial.dispose();
+                  exportRenderer.dispose();
+
+                  exportButton.disabled =
+                    false;
+
+                  exportButton.textContent =
+                    "↓ PNG";
 
                   alert(
-                    "PNG could not be prepared."
+                    "PNG export could not be prepared."
                   );
                 };
 
@@ -1371,15 +1476,23 @@
 
             } catch (error) {
               /*
-                Closing the Android share
-                sheet is not an export error.
+                Closing the Android share sheet
+                is not treated as an export error.
               */
               console.log(
                 "PNG share cancelled or unavailable:",
                 error
               );
 
-              cleanup();
+              exportGeometry.dispose();
+              exportMaterial.dispose();
+              exportRenderer.dispose();
+
+              exportButton.disabled =
+                false;
+
+              exportButton.textContent =
+                "↓ PNG";
             }
           },
           "image/png"
@@ -1391,7 +1504,15 @@
           error
         );
 
-        cleanup();
+        exportGeometry.dispose();
+        exportMaterial.dispose();
+        exportRenderer.dispose();
+
+        exportButton.disabled =
+          false;
+
+        exportButton.textContent =
+          "↓ PNG";
 
         alert(
           "PNG export could not be created."
