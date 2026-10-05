@@ -60,15 +60,15 @@
     }
 
     .top h1 {
-  margin: 0;
-  font-family: "Oxanium", Arial, sans-serif;
-  font-size: clamp(30px, 5vw, 58px);
-  line-height: 1;
-  font-weight: 600;
-  letter-spacing: -1px;
-  color: #20b2aa;
-  white-space: nowrap;
-}
+      margin: 0;
+      font-family: "Oxanium", Arial, sans-serif;
+      font-size: clamp(30px, 5vw, 58px);
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: -1px;
+      color: #20b2aa;
+      white-space: nowrap;
+    }
 
     .top p {
       margin: 12px 0 0;
@@ -512,6 +512,17 @@
       );
 
       input.addEventListener(
+        "input",
+        function() {
+          this.value =
+            this.value.replace(
+              /[\p{Extended_Pictographic}\uFE0F\u200D]/gu,
+              ""
+            );
+        }
+      );
+
+      input.addEventListener(
         "keydown",
         function(event) {
           if (
@@ -596,13 +607,6 @@
         )
       );
 
-      /*
-        Sharp matte blueish-white particles.
-
-        No glow.
-        No transparency.
-        No additive blending.
-      */
       material =
         new THREE.PointsMaterial({
           color: 0xe8f4ff,
@@ -1065,23 +1069,12 @@
       exportButton.textContent =
         "PNG...";
 
-      /*
-        Export resolution.
-
-        1600 × 900 gives the text plenty of room
-        while keeping mobile memory usage reasonable.
-      */
       const exportWidth =
         1600;
 
       const exportHeight =
         900;
 
-      /*
-        Completely separate scene.
-
-        Nothing from the live interface is placed here.
-      */
       const exportScene =
         new THREE.Scene();
 
@@ -1090,13 +1083,6 @@
           0x000000
         );
 
-      /*
-        Copy the FINAL text positions.
-
-        This means exporting during MORPHING still
-        produces the complete text instead of capturing
-        the particles halfway through the animation.
-      */
       const exportPositions =
         new Float32Array(
           textTargets
@@ -1113,10 +1099,6 @@
         )
       );
 
-      /*
-        Same sharp matte blueish-white style
-        as the live particle sphere.
-      */
       const exportMaterial =
         new THREE.PointsMaterial({
           color: 0xe8f4ff,
@@ -1144,9 +1126,6 @@
         exportParticles
       );
 
-      /*
-        Calculate the actual particle bounds.
-      */
       let minX = Infinity;
       let maxX = -Infinity;
       let minY = Infinity;
@@ -1202,9 +1181,6 @@
         exportWidth /
         exportHeight;
 
-      /*
-        Extra space around the particle text.
-      */
       const padding =
         1.28;
 
@@ -1220,9 +1196,6 @@
         halfHeight *
         aspect;
 
-      /*
-        Straight-on orthographic camera.
-      */
       const exportCamera =
         new THREE.OrthographicCamera(
           -halfWidth,
@@ -1245,11 +1218,6 @@
         0
       );
 
-      /*
-        Completely separate renderer.
-
-        The live animation renderer is untouched.
-      */
       const exportRenderer =
         new THREE.WebGLRenderer({
           antialias: true,
@@ -1278,16 +1246,6 @@
       );
 
       try {
-        /*
-          Convert directly to a PNG data URL.
-
-          No Blob.
-          No URL.createObjectURL().
-          No blob: URL.
-
-          This avoids the Acode Android 9
-          DownloadManager error.
-        */
         const dataURL =
           exportRenderer
             .domElement
@@ -1295,11 +1253,6 @@
               "image/png"
             );
 
-        /*
-          First try a normal browser download.
-
-          This works on HTTPS pages such as GitHub Pages.
-        */
         const downloadLink =
           document.createElement(
             "a"
@@ -1335,13 +1288,6 @@
           downloadLink
         );
 
-        /*
-          Acode and some Android WebViews may reject
-          data-URL downloads.
-
-          In that case, open the PNG itself instead.
-          The user can then save the image normally.
-        */
         if (!downloadWorked) {
           const imageWindow =
             window.open(
