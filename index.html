@@ -7,6 +7,7 @@
   <title>PeppermintGrave // Morphing Sphere</title>
 
   <link rel="icon" type="image/png" href="favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700&display=swap" rel="stylesheet">
 
   <style>
     * {
@@ -59,13 +60,15 @@
     }
 
     .top h1 {
-      margin: 0;
-      font-size: clamp(30px, 5vw, 58px);
-      line-height: 1;
-      font-weight: 700;
-      letter-spacing: -1.8px;
-      color: #f07b9a;
-    }
+  margin: 0;
+  font-family: "Oxanium", Arial, sans-serif;
+  font-size: clamp(30px, 5vw, 58px);
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -1px;
+  color: #20b2aa;
+  white-space: nowrap;
+}
 
     .top p {
       margin: 12px 0 0;
@@ -593,16 +596,23 @@
         )
       );
 
+      /*
+        Sharp matte blueish-white particles.
+
+        No glow.
+        No transparency.
+        No additive blending.
+      */
       material =
         new THREE.PointsMaterial({
-          color: 0x8d79d9,
+          color: 0xe8f4ff,
           size:
             window.innerWidth < 600
               ? 0.065
               : 0.055,
-          transparent: true,
-          opacity: 0.94,
-          depthWrite: false,
+          transparent: false,
+          opacity: 1.0,
+          depthWrite: true,
           blending:
             THREE.NormalBlending
         });
@@ -921,7 +931,7 @@
       gsap.to(
         material,
         {
-          opacity: 0.78,
+          opacity: 1.0,
           duration: 0.45,
           ease: "power2.out"
         }
@@ -1005,33 +1015,13 @@
       gsap.to(
         material,
         {
-          opacity: 0.94,
+          opacity: 1.0,
           duration: 0.8,
           ease: "power2.out"
         }
       );
     }
 
-    /*
-      Only plain filename characters are accepted.
-
-      Normal:
-        Buddy
-        Hello World
-        PeppermintGrave
-        My-Text
-        My_Text
-
-      Special characters:
-        Killer*
-        Hello!
-        Test?
-        A/B
-        : )
-        etc.
-
-      Special-character text becomes "xxx".
-    */
     function getExportFilename() {
       if (!currentText) {
         return null;
@@ -1054,29 +1044,6 @@
       );
     }
 
-    /*
-      EXPORT
-
-      The live animation is NOT captured.
-
-      A separate Three.js scene is created containing only:
-        • the particle text
-        • black background
-
-      A straight-on orthographic camera is placed in front
-      of the text.
-
-      No:
-        • heading
-        • subtitle
-        • status
-        • signature
-        • input
-        • arrow
-        • PNG button
-        • sphere
-        • UI
-    */
     function exportTextImage() {
       if (
         !currentText ||
@@ -1098,12 +1065,23 @@
       exportButton.textContent =
         "PNG...";
 
+      /*
+        Export resolution.
+
+        1600 × 900 gives the text plenty of room
+        while keeping mobile memory usage reasonable.
+      */
       const exportWidth =
         1600;
 
       const exportHeight =
         900;
 
+      /*
+        Completely separate scene.
+
+        Nothing from the live interface is placed here.
+      */
       const exportScene =
         new THREE.Scene();
 
@@ -1113,11 +1091,11 @@
         );
 
       /*
-        Copy the target array.
+        Copy the FINAL text positions.
 
-        The live particle positions can be in the middle
-        of a morph, but textTargets always contains the
-        complete final text.
+        This means exporting during MORPHING still
+        produces the complete text instead of capturing
+        the particles halfway through the animation.
       */
       const exportPositions =
         new Float32Array(
@@ -1136,25 +1114,16 @@
       );
 
       /*
-        EXPORT MATERIAL
-
-        The live material is intentionally not reused.
-
-        The export uses:
-          • brighter purple
-          • full opacity
-          • larger particle points
-
-        This keeps the particle structure while making
-        the exported image clearly visible.
+        Same sharp matte blueish-white style
+        as the live particle sphere.
       */
       const exportMaterial =
         new THREE.PointsMaterial({
-          color: 0xb39cff,
+          color: 0xe8f4ff,
           size: 0.115,
           transparent: false,
           opacity: 1.0,
-          depthWrite: false,
+          depthWrite: true,
           blending:
             THREE.NormalBlending
         });
@@ -1165,11 +1134,6 @@
           exportMaterial
         );
 
-      /*
-        No rotation.
-
-        This is the front-facing text view.
-      */
       exportParticles.rotation.set(
         0,
         0,
@@ -1181,7 +1145,7 @@
       );
 
       /*
-        Find the complete text bounds.
+        Calculate the actual particle bounds.
       */
       let minX = Infinity;
       let maxX = -Infinity;
@@ -1239,7 +1203,7 @@
         exportHeight;
 
       /*
-        Extra breathing room around the text.
+        Extra space around the particle text.
       */
       const padding =
         1.28;
@@ -1257,7 +1221,7 @@
         aspect;
 
       /*
-        Straight-on camera.
+        Straight-on orthographic camera.
       */
       const exportCamera =
         new THREE.OrthographicCamera(
@@ -1282,14 +1246,15 @@
       );
 
       /*
-        Separate renderer.
+        Completely separate renderer.
 
-        This leaves the live renderer alone.
+        The live animation renderer is untouched.
       */
       const exportRenderer =
         new THREE.WebGLRenderer({
           antialias: true,
-          alpha: false
+          alpha: false,
+          preserveDrawingBuffer: true
         });
 
       exportRenderer.setPixelRatio(
@@ -1312,15 +1277,17 @@
         exportCamera
       );
 
-      /*
-        IMPORTANT FOR ACODE:
-
-        Do NOT use Blob URLs here.
-
-        The PNG is converted directly into
-        a data URL instead.
-      */
       try {
+        /*
+          Convert directly to a PNG data URL.
+
+          No Blob.
+          No URL.createObjectURL().
+          No blob: URL.
+
+          This avoids the Acode Android 9
+          DownloadManager error.
+        */
         const dataURL =
           exportRenderer
             .domElement
@@ -1329,51 +1296,87 @@
             );
 
         /*
-          Open the generated PNG directly.
+          First try a normal browser download.
 
-          The image contains ONLY:
-            • black background
-            • bright purple particle text
+          This works on HTTPS pages such as GitHub Pages.
         */
-        const imageWindow =
-          window.open(
-            dataURL,
-            "_blank"
+        const downloadLink =
+          document.createElement(
+            "a"
           );
+
+        downloadLink.href =
+          dataURL;
+
+        downloadLink.download =
+          filename;
+
+        downloadLink.style.display =
+          "none";
+
+        document.body.appendChild(
+          downloadLink
+        );
+
+        let downloadWorked = false;
+
+        try {
+          downloadLink.click();
+
+          downloadWorked = true;
+        } catch (downloadError) {
+          console.warn(
+            "Direct PNG download unavailable:",
+            downloadError
+          );
+        }
+
+        document.body.removeChild(
+          downloadLink
+        );
 
         /*
-          Some WebViews block window.open.
+          Acode and some Android WebViews may reject
+          data-URL downloads.
 
-          Fallback: create a normal link
-          without a download attribute.
+          In that case, open the PNG itself instead.
+          The user can then save the image normally.
         */
-        if (!imageWindow) {
-          const link =
-            document.createElement(
-              "a"
+        if (!downloadWorked) {
+          const imageWindow =
+            window.open(
+              dataURL,
+              "_blank"
             );
 
-          link.href =
-            dataURL;
+          if (!imageWindow) {
+            const fallbackLink =
+              document.createElement(
+                "a"
+              );
 
-          link.target =
-            "_blank";
+            fallbackLink.href =
+              dataURL;
 
-          link.rel =
-            "noopener";
+            fallbackLink.target =
+              "_blank";
 
-          link.style.display =
-            "none";
+            fallbackLink.rel =
+              "noopener";
 
-          document.body.appendChild(
-            link
-          );
+            fallbackLink.style.display =
+              "none";
 
-          link.click();
+            document.body.appendChild(
+              fallbackLink
+            );
 
-          document.body.removeChild(
-            link
-          );
+            fallbackLink.click();
+
+            document.body.removeChild(
+              fallbackLink
+            );
+          }
         }
 
         exportButton.disabled =
@@ -1403,7 +1406,7 @@
         exportRenderer.dispose();
 
         alert(
-          "PNG export could not be opened."
+          "PNG export could not be created."
         );
       }
     }
