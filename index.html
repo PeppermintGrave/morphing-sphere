@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <link rel="icon" type="image/png" href="favicon.png">
-
   <title>PeppermintGrave // Morphing Sphere</title>
+
+  <link rel="icon" type="image/png" href="favicon.png">
 
   <style>
     * {
@@ -1135,15 +1135,25 @@
         )
       );
 
+      /*
+        EXPORT MATERIAL
+
+        The live material is intentionally not reused.
+
+        The export uses:
+          • brighter purple
+          • full opacity
+          • larger particle points
+
+        This keeps the particle structure while making
+        the exported image clearly visible.
+      */
       const exportMaterial =
         new THREE.PointsMaterial({
-          color: 0x8d79d9,
-          size:
-            window.innerWidth < 600
-              ? 0.065
-              : 0.055,
-          transparent: true,
-          opacity: 0.78,
+          color: 0xb39cff,
+          size: 0.115,
+          transparent: false,
+          opacity: 1.0,
           depthWrite: false,
           blending:
             THREE.NormalBlending
@@ -1279,8 +1289,7 @@
       const exportRenderer =
         new THREE.WebGLRenderer({
           antialias: true,
-          alpha: false,
-          preserveDrawingBuffer: true
+          alpha: false
         });
 
       exportRenderer.setPixelRatio(
@@ -1304,209 +1313,68 @@
       );
 
       /*
-        PNG EXPORT
+        IMPORTANT FOR ACODE:
 
-        Do NOT use:
-          URL.createObjectURL()
-          window.open(dataURL)
+        Do NOT use Blob URLs here.
 
-        The old version used those approaches.
-        On Acode / Android they caused either
-        the DownloadManager blob error or
-        an about:blank page.
-
-        Instead:
-          1. Render to a PNG Blob.
-          2. Turn it into a File with the desired name.
-          3. Use Android's native Web Share API
-             to hand the actual PNG file to the
-             system share/save sheet.
-
-        No blob URL is created.
+        The PNG is converted directly into
+        a data URL instead.
       */
       try {
-        exportRenderer.domElement.toBlob(
-          async function(blob) {
-            if (!blob) {
-              exportGeometry.dispose();
-              exportMaterial.dispose();
-              exportRenderer.dispose();
+        const dataURL =
+          exportRenderer
+            .domElement
+            .toDataURL(
+              "image/png"
+            );
 
-              exportButton.disabled =
-                false;
+        /*
+          Open the generated PNG directly.
 
-              exportButton.textContent =
-                "↓ PNG";
+          The image contains ONLY:
+            • black background
+            • bright purple particle text
+        */
+        const imageWindow =
+          window.open(
+            dataURL,
+            "_blank"
+          );
 
-              alert(
-                "PNG export failed."
-              );
+        /*
+          Some WebViews block window.open.
 
-              return;
-            }
+          Fallback: create a normal link
+          without a download attribute.
+        */
+        if (!imageWindow) {
+          const link =
+            document.createElement(
+              "a"
+            );
 
-            try {
-              const file =
-                new File(
-                  [blob],
-                  filename,
-                  {
-                    type:
-                      "image/png"
-                  }
-                );
+          link.href =
+            dataURL;
 
-              /*
-                Android Chrome / modern browsers
-                supporting file sharing.
+          link.target =
+            "_blank";
 
-                This opens the native Android
-                sharing interface instead of
-                navigating to a data URL.
-              */
-              if (
-                navigator.share &&
-                navigator.canShare &&
-                navigator.canShare({
-                  files: [file]
-                })
-              ) {
-                await navigator.share({
-                  files: [file],
-                  title: filename
-                });
+          link.rel =
+            "noopener";
 
-                exportGeometry.dispose();
-                exportMaterial.dispose();
-                exportRenderer.dispose();
+          link.style.display =
+            "none";
 
-                exportButton.disabled =
-                  false;
+          document.body.appendChild(
+            link
+          );
 
-                exportButton.textContent =
-                  "↓ PNG";
+          link.click();
 
-                return;
-              }
-
-              /*
-                Fallback for browsers without
-                file sharing support.
-
-                This does NOT create a blob URL.
-
-                The data URL is used directly
-                with the download attribute.
-              */
-              const reader =
-                new FileReader();
-
-              reader.onload =
-                function() {
-                  try {
-                    const dataURL =
-                      reader.result;
-
-                    const link =
-                      document.createElement(
-                        "a"
-                      );
-
-                    link.href =
-                      dataURL;
-
-                    link.download =
-                      filename;
-
-                    link.style.display =
-                      "none";
-
-                    document.body.appendChild(
-                      link
-                    );
-
-                    link.click();
-
-                    document.body.removeChild(
-                      link
-                    );
-
-                  } catch (error) {
-                    console.error(
-                      "PNG fallback failed:",
-                      error
-                    );
-
-                    alert(
-                      "Your browser does not support saving this PNG directly."
-                    );
-                  }
-
-                  exportGeometry.dispose();
-                  exportMaterial.dispose();
-                  exportRenderer.dispose();
-
-                  exportButton.disabled =
-                    false;
-
-                  exportButton.textContent =
-                    "↓ PNG";
-                };
-
-              reader.onerror =
-                function() {
-                  exportGeometry.dispose();
-                  exportMaterial.dispose();
-                  exportRenderer.dispose();
-
-                  exportButton.disabled =
-                    false;
-
-                  exportButton.textContent =
-                    "↓ PNG";
-
-                  alert(
-                    "PNG export could not be prepared."
-                  );
-                };
-
-              reader.readAsDataURL(
-                blob
-              );
-
-            } catch (error) {
-              /*
-                Closing the Android share sheet
-                is not treated as an export error.
-              */
-              console.log(
-                "PNG share cancelled or unavailable:",
-                error
-              );
-
-              exportGeometry.dispose();
-              exportMaterial.dispose();
-              exportRenderer.dispose();
-
-              exportButton.disabled =
-                false;
-
-              exportButton.textContent =
-                "↓ PNG";
-            }
-          },
-          "image/png"
-        );
-
-      } catch (error) {
-        console.error(
-          "PNG export failed:",
-          error
-        );
-
-        exportGeometry.dispose();
-        exportMaterial.dispose();
-        exportRenderer.dispose();
+          document.body.removeChild(
+            link
+          );
+        }
 
         exportButton.disabled =
           false;
@@ -1514,8 +1382,28 @@
         exportButton.textContent =
           "↓ PNG";
 
+        exportGeometry.dispose();
+        exportMaterial.dispose();
+        exportRenderer.dispose();
+
+      } catch (error) {
+        console.error(
+          "PNG export failed:",
+          error
+        );
+
+        exportButton.disabled =
+          false;
+
+        exportButton.textContent =
+          "↓ PNG";
+
+        exportGeometry.dispose();
+        exportMaterial.dispose();
+        exportRenderer.dispose();
+
         alert(
-          "PNG export could not be created."
+          "PNG export could not be opened."
         );
       }
     }
