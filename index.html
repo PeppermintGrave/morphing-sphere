@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <title>PeppermintGrave // Morphing Sphere</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      position: relative;
+      touch-action: none;
+    }
+
+    #container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+      background: #000;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    .top {
+      position: absolute;
+      top: 30px;
+      left: 32px;
+      right: 32px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .top h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 58px);
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -1.8px;
+      color: #f07b9a;
+    }
+
+    .top p {
+      margin: 12px 0 0;
+      color: #777;
+      font-size: clamp(15px, 2vw, 22px);
+      letter-spacing: 0.2px;
+    }
+
+    #exportButton {
+      position: absolute;
+      top: 0;
+      right: 0;
+
+      height: 46px;
+      padding: 0 16px;
+
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      border-radius: 14px;
+
+      background: rgba(18, 18, 18, 0.88);
+      color: rgba(255, 255, 255, 0.82);
+
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+
+      cursor: pointer;
+
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.025),
+        0 0 25px rgba(100, 90, 255, 0.10);
+
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+
+      pointer-events: auto;
+
+      transition:
+        transform 0.15s ease,
+        opacity 0.15s ease,
+        background 0.15s ease;
+    }
+
+    #exportButton:active {
+      transform: scale(0.94);
+    }
+
+    #exportButton:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    .status {
+      position: absolute;
+      left: 50%;
+      bottom: 190px;
+      transform: translateX(-50%);
+      z-index: 10;
+      color: #666;
+      font-size: 14px;
+      letter-spacing: 1.5px;
+      pointer-events: none;
+    }
+
+    .signature {
+      position: absolute;
+      left: 24px;
+      bottom: 160px;
+      z-index: 10;
+
+      color: rgba(210, 210, 210, 0.28);
+      font-family:
+        "Segoe Print",
+        "Bradley Hand",
+        "Comic Sans MS",
+        cursive;
+
+      font-size: 18px;
+      font-weight: 500;
+      font-style: italic;
+      letter-spacing: -0.7px;
+
+      transform: rotate(-4deg);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .signature::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: -4px;
+      bottom: -5px;
+      height: 1px;
+      background: rgba(210, 210, 210, 0.20);
+      transform: rotate(-1deg);
+    }
+
+    .input-wrap {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 36px;
+      height: 112px;
+      z-index: 20;
+
+      display: flex;
+      align-items: center;
+
+      padding: 10px 10px 10px 30px;
+
+      border: 1px solid rgba(255, 255, 255, 0.30);
+      border-radius: 28px;
+
+      background: rgba(18, 18, 18, 0.88);
+
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.025),
+        0 0 35px rgba(100, 90, 255, 0.12);
+
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    #textInput {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+
+      border: 0;
+      outline: 0;
+      background: transparent;
+
+      color: #fff;
+
+      font-size: clamp(20px, 4vw, 31px);
+      font-weight: 600;
+
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #textInput::placeholder {
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    #submit {
+      flex: 0 0 auto;
+
+      width: 92px;
+      height: 92px;
+
+      margin-left: 12px;
+
+      border: 0;
+      border-radius: 25px;
+
+      background: #5d4cff;
+      color: white;
+
+      font-size: 48px;
+      line-height: 1;
+
+      cursor: pointer;
+
+      box-shadow:
+        0 0 25px rgba(93, 76, 255, 0.35);
+
+      transition:
+        transform 0.15s ease,
+        background 0.15s ease;
+    }
+
+    #submit:active {
+      transform: scale(0.94);
+    }
+
+    @media (max-width: 600px) {
+      .top {
+        top: 30px;
+        left: 32px;
+        right: 20px;
+      }
+
+      .top h1 {
+        font-size: 38px;
+        letter-spacing: -1.4px;
+        padding-right: 105px;
+      }
+
+      .top p {
+        margin-top: 10px;
+        font-size: 18px;
+      }
+
+      #exportButton {
+        height: 42px;
+        padding: 0 13px;
+        border-radius: 13px;
+        font-size: 13px;
+      }
+
+      .status {
+        bottom: 188px;
+        font-size: 14px;
+      }
+
+      .signature {
+        left: 24px;
+        bottom: 164px;
+        font-size: 17px;
+      }
+
+      .input-wrap {
+        left: 24px;
+        right: 24px;
+        bottom: 36px;
+        height: 112px;
+        padding-left: 30px;
+      }
+
+      #submit {
+        width: 92px;
+        height: 92px;
+        border-radius: 25px;
+        font-size: 46px;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .top h1 {
+        font-size: 34px;
+        padding-right: 95px;
+      }
+
+      .top p {
+        font-size: 17px;
+      }
+
+      #exportButton {
+        height: 40px;
+        padding: 0 11px;
+        font-size: 12px;
+      }
+
+      .input-wrap {
+        left: 24px;
+        right: 24px;
+      }
+
+      #submit {
+        width: 84px;
+        height: 84px;
+        font-size: 43px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="container">
+
+    <div class="top">
+      <h1>Morphing Sphere</h1>
+      <p>Particles become whatever you type.</p>
+
+      <button
+        id="exportButton"
+        type="button"
+        aria-label="Download particle text as PNG"
+        disabled
+      >
+        ↓ PNG
+      </button>
+    </div>
+
+    <div class="status" id="status">
+      SPHERE
+    </div>
+
+    <div class="signature">
+      PeppermintGrave
+    </div>
+
+    <div class="input-wrap">
+      <input
+        id="textInput"
+        type="text"
+        maxlength="40"
+        placeholder="..."
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="sentences"
+        spellcheck="false"
+      >
+
+      <button
+        id="submit"
+        type="button"
+        aria-label="Create text"
+      >
+        →
+      </button>
+    </div>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.1/gsap.min.js"></script>
+
+  <script>
+    const container =
+      document.getElementById("container");
+
+    const input =
+      document.getElementById("textInput");
+
+    const submit =
+      document.getElementById("submit");
+
+    const status =
+      document.getElementById("status");
+
+    const exportButton =
+      document.getElementById("exportButton");
+
+    let scene;
+    let camera;
+    let renderer;
+    let particles;
+    let geometry;
+    let material;
+
+    let positions;
+    let sphereTargets;
+    let textTargets;
+
+    let currentText = "";
+
+    let particleCount = 7000;
+
+    const isMobile =
+      window.innerWidth < 600;
+
+    if (
+      window.innerWidth *
+      window.innerHeight <
+      300000
+    ) {
+      particleCount = 7000;
+    } else if (
+      window.innerWidth *
+      window.innerHeight <
+      600000
+    ) {
+      particleCount = 8500;
+    } else if (
+      window.innerWidth *
+      window.innerHeight <
+      1000000
+    ) {
+      particleCount = 10500;
+    } else {
+      particleCount = 14000;
+    }
+
+    let zoom =
+      window.innerWidth < 600
+        ? 29
+        : 25;
+
+    const MIN_ZOOM = 10;
+    const MAX_ZOOM = 78;
+
+    let morphing = false;
+    let returnTimer = null;
+
+    let pinchStartDistance = null;
+    let pinchStartZoom = zoom;
+
+    function init() {
+      scene =
+        new THREE.Scene();
+
+      camera =
+        new THREE.PerspectiveCamera(
+          45,
+          window.innerWidth /
+            window.innerHeight,
+          0.1,
+          200
+        );
+
+      camera.position.z =
+        zoom;
+
+      renderer =
+        new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: false
+        });
+
+      renderer.setPixelRatio(
+        Math.min(
+          window.devicePixelRatio || 1,
+          2
+        )
+      );
+
+      renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+      );
+
+      renderer.setClearColor(
+        0x000000,
+        1
+      );
+
+      container.appendChild(
+        renderer.domElement
+      );
+
+      createParticles();
+
+      window.addEventListener(
+        "resize",
+        onResize
+      );
+
+      setupZoom();
+
+      submit.addEventListener(
+        "click",
+        createText
+      );
+
+      exportButton.addEventListener(
+        "click",
+        exportTextImage
+      );
+
+      input.addEventListener(
+        "keydown",
+        function(event) {
+          if (
+            event.key === "Enter"
+          ) {
+            event.preventDefault();
+            createText();
+          }
+        }
+      );
+
+      animate();
+    }
+
+    function createParticles() {
+      geometry =
+        new THREE.BufferGeometry();
+
+      positions =
+        new Float32Array(
+          particleCount * 3
+        );
+
+      sphereTargets =
+        new Float32Array(
+          particleCount * 3
+        );
+
+      const radius = 7.2;
+
+      for (
+        let i = 0;
+        i < particleCount;
+        i++
+      ) {
+        const i3 = i * 3;
+
+        const phi =
+          Math.acos(
+            1 -
+            2 *
+              (i + 0.5) /
+              particleCount
+          );
+
+        const theta =
+          Math.PI *
+          (1 + Math.sqrt(5)) *
+          i;
+
+        const sinPhi =
+          Math.sin(phi);
+
+        const x =
+          radius *
+          sinPhi *
+          Math.cos(theta);
+
+        const y =
+          radius *
+          Math.cos(phi);
+
+        const z =
+          radius *
+          sinPhi *
+          Math.sin(theta);
+
+        sphereTargets[i3] = x;
+        sphereTargets[i3 + 1] = y;
+        sphereTargets[i3 + 2] = z;
+
+        positions[i3] = x;
+        positions[i3 + 1] = y;
+        positions[i3 + 2] = z;
+      }
+
+      geometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(
+          positions,
+          3
+        )
+      );
+
+      material =
+        new THREE.PointsMaterial({
+          color: 0x8d79d9,
+          size:
+            window.innerWidth < 600
+              ? 0.065
+              : 0.055,
+          transparent: true,
+          opacity: 0.94,
+          depthWrite: false,
+          blending:
+            THREE.NormalBlending
+        });
+
+      particles =
+        new THREE.Points(
+          geometry,
+          material
+        );
+
+      scene.add(
+        particles
+      );
+    }
+
+    function createTextTargets(text) {
+      const canvas =
+        document.createElement(
+          "canvas"
+        );
+
+      const ctx =
+        canvas.getContext(
+          "2d",
+          {
+            willReadFrequently: true
+          }
+        );
+
+      const mobile =
+        window.innerWidth < 600;
+
+      const canvasWidth =
+        mobile
+          ? 1400
+          : 2200;
+
+      const canvasHeight =
+        mobile
+          ? 500
+          : 650;
+
+      canvas.width =
+        canvasWidth;
+
+      canvas.height =
+        canvasHeight;
+
+      let fontSize =
+        mobile
+          ? 190
+          : 260;
+
+      const fontWeight =
+        "700";
+
+      const fontFamily =
+        "Arial, Helvetica, sans-serif";
+
+      ctx.font =
+        fontWeight +
+        " " +
+        fontSize +
+        "px " +
+        fontFamily;
+
+      const maxTextWidth =
+        canvasWidth *
+        (
+          mobile
+            ? 0.88
+            : 0.90
+        );
+
+      let measured =
+        ctx.measureText(
+          text
+        ).width;
+
+      while (
+        measured >
+          maxTextWidth &&
+        fontSize > 55
+      ) {
+        fontSize -= 5;
+
+        ctx.font =
+          fontWeight +
+          " " +
+          fontSize +
+          "px " +
+          fontFamily;
+
+        measured =
+          ctx.measureText(
+            text
+          ).width;
+      }
+
+      ctx.clearRect(
+        0,
+        0,
+        canvasWidth,
+        canvasHeight
+      );
+
+      ctx.fillStyle =
+        "#ffffff";
+
+      ctx.textAlign =
+        "center";
+
+      ctx.textBaseline =
+        "middle";
+
+      ctx.fillText(
+        text,
+        canvasWidth / 2,
+        canvasHeight / 2
+      );
+
+      const image =
+        ctx.getImageData(
+          0,
+          0,
+          canvasWidth,
+          canvasHeight
+        );
+
+      const data =
+        image.data;
+
+      const points = [];
+
+      const sampleRate =
+        mobile
+          ? 1.55
+          : 1.7;
+
+      for (
+        let py = 0;
+        py < canvasHeight;
+        py += sampleRate
+      ) {
+        for (
+          let px = 0;
+          px < canvasWidth;
+          px += sampleRate
+        ) {
+          const x =
+            Math.floor(px);
+
+          const y =
+            Math.floor(py);
+
+          const index =
+            (
+              y *
+                canvasWidth +
+              x
+            ) * 4;
+
+          const alpha =
+            data[index + 3];
+
+          if (
+            alpha > 100 &&
+            Math.random() < 0.86
+          ) {
+            points.push({
+              x: x,
+              y: y
+            });
+          }
+        }
+      }
+
+      if (
+        points.length === 0
+      ) {
+        return new Float32Array(
+          particleCount * 3
+        );
+      }
+
+      const result =
+        new Float32Array(
+          particleCount * 3
+        );
+
+      const xScale =
+        mobile
+          ? 0.0150
+          : 0.0140;
+
+      const yScale =
+        mobile
+          ? 0.0150
+          : 0.0140;
+
+      const fitScale =
+        mobile
+          ? 0.82
+          : 0.88;
+
+      for (
+        let i = 0;
+        i < particleCount;
+        i++
+      ) {
+        let pointIndex;
+
+        if (
+          points.length >
+          particleCount
+        ) {
+          pointIndex =
+            Math.floor(
+              i *
+                points.length /
+                particleCount
+            );
+        } else {
+          pointIndex =
+            i % points.length;
+        }
+
+        const point =
+          points[pointIndex];
+
+        const i3 =
+          i * 3;
+
+        const jitterX =
+          points.length <
+          particleCount
+            ? (
+                Math.random() -
+                0.5
+              ) * 0.035
+            : 0;
+
+        const jitterY =
+          points.length <
+          particleCount
+            ? (
+                Math.random() -
+                0.5
+              ) * 0.035
+            : 0;
+
+        const centeredX =
+          (
+            point.x -
+            canvasWidth / 2
+          ) *
+          xScale *
+          fitScale;
+
+        const centeredY =
+          (
+            canvasHeight / 2 -
+            point.y
+          ) *
+          yScale *
+          fitScale;
+
+        result[i3] =
+          centeredX +
+          jitterX;
+
+        result[i3 + 1] =
+          centeredY +
+          jitterY;
+
+        result[i3 + 2] =
+          (
+            Math.random() -
+            0.5
+          ) * 0.22;
+      }
+
+      return result;
+    }
+
+    function createText() {
+      const text =
+        input.value.trim();
+
+      if (!text) {
+        return;
+      }
+
+      currentText =
+        text;
+
+      exportButton.disabled =
+        false;
+
+      textTargets =
+        createTextTargets(
+          text
+        );
+
+      morphing = true;
+
+      status.textContent =
+        "MORPHING";
+
+      if (returnTimer) {
+        clearTimeout(
+          returnTimer
+        );
+      }
+
+      gsap.to(
+        material,
+        {
+          opacity: 0.78,
+          duration: 0.45,
+          ease: "power2.out"
+        }
+      );
+
+      gsap.to(
+        geometry.attributes.position.array,
+        {
+          duration: 1.45,
+          ease: "power3.inOut",
+          endArray:
+            textTargets,
+
+          onUpdate:
+            function() {
+              geometry
+                .attributes
+                .position
+                .needsUpdate =
+                true;
+            },
+
+          onComplete:
+            function() {
+              morphing =
+                false;
+
+              status.textContent =
+                "TEXT";
+            }
+        }
+      );
+
+      returnTimer =
+        setTimeout(
+          function() {
+            returnToSphere();
+          },
+          7000
+        );
+    }
+
+    function returnToSphere() {
+      if (!sphereTargets) {
+        return;
+      }
+
+      morphing = true;
+
+      status.textContent =
+        "RETURNING";
+
+      gsap.to(
+        geometry.attributes.position.array,
+        {
+          duration: 1.55,
+          ease: "power3.inOut",
+          endArray:
+            sphereTargets,
+
+          onUpdate:
+            function() {
+              geometry
+                .attributes
+                .position
+                .needsUpdate =
+                true;
+            },
+
+          onComplete:
+            function() {
+              morphing =
+                false;
+
+              status.textContent =
+                "SPHERE";
+            }
+        }
+      );
+
+      gsap.to(
+        material,
+        {
+          opacity: 0.94,
+          duration: 0.8,
+          ease: "power2.out"
+        }
+      );
+    }
+
+    function getExportFilename() {
+      if (!currentText) {
+        return null;
+      }
+
+      const valid =
+        /^[A-Za-z0-9 _-]+$/.test(
+          currentText
+        );
+
+      const filenameText =
+        valid
+          ? currentText
+          : "xxx";
+
+      return (
+        "Morphing Sphere — " +
+        filenameText +
+        ".png"
+      );
+    }
+
+    function exportTextImage() {
+      if (
+        !currentText ||
+        !textTargets
+      ) {
+        return;
+      }
+
+      const filename =
+        getExportFilename();
+
+      if (!filename) {
+        return;
+      }
+
+      exportButton.disabled =
+        true;
+
+      exportButton.textContent =
+        "PNG...";
+
+      const exportWidth =
+        1600;
+
+      const exportHeight =
+        900;
+
+      const exportScene =
+        new THREE.Scene();
+
+      exportScene.background =
+        new THREE.Color(
+          0x000000
+        );
+
+      const exportPositions =
+        new Float32Array(
+          textTargets
+        );
+
+      const exportGeometry =
+        new THREE.BufferGeometry();
+
+      exportGeometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(
+          exportPositions,
+          3
+        )
+      );
+
+      const exportMaterial =
+        new THREE.PointsMaterial({
+          color: 0x8d79d9,
+          size:
+            window.innerWidth < 600
+              ? 0.065
+              : 0.055,
+          transparent: true,
+          opacity: 0.78,
+          depthWrite: false,
+          blending:
+            THREE.NormalBlending
+        });
+
+      const exportParticles =
+        new THREE.Points(
+          exportGeometry,
+          exportMaterial
+        );
+
+      exportParticles.rotation.set(
+        0,
+        0,
+        0
+      );
+
+      exportScene.add(
+        exportParticles
+      );
+
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      let maxY = -Infinity;
+
+      for (
+        let i = 0;
+        i < exportPositions.length;
+        i += 3
+      ) {
+        const x =
+          exportPositions[i];
+
+        const y =
+          exportPositions[i + 1];
+
+        if (x < minX) {
+          minX = x;
+        }
+
+        if (x > maxX) {
+          maxX = x;
+        }
+
+        if (y < minY) {
+          minY = y;
+        }
+
+        if (y > maxY) {
+          maxY = y;
+        }
+      }
+
+      const textWidth =
+        Math.max(
+          maxX - minX,
+          1
+        );
+
+      const textHeight =
+        Math.max(
+          maxY - minY,
+          1
+        );
+
+      const centerX =
+        (minX + maxX) / 2;
+
+      const centerY =
+        (minY + maxY) / 2;
+
+      const aspect =
+        exportWidth /
+        exportHeight;
+
+      const padding =
+        1.28;
+
+      const halfHeight =
+        Math.max(
+          textHeight / 2,
+          textWidth /
+            (2 * aspect)
+        ) *
+        padding;
+
+      const halfWidth =
+        halfHeight *
+        aspect;
+
+      const exportCamera =
+        new THREE.OrthographicCamera(
+          -halfWidth,
+          halfWidth,
+          halfHeight,
+          -halfHeight,
+          0.1,
+          100
+        );
+
+      exportCamera.position.set(
+        centerX,
+        centerY,
+        30
+      );
+
+      exportCamera.lookAt(
+        centerX,
+        centerY,
+        0
+      );
+
+      const exportRenderer =
+        new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: false
+        });
+
+      exportRenderer.setPixelRatio(
+        1
+      );
+
+      exportRenderer.setSize(
+        exportWidth,
+        exportHeight,
+        false
+      );
+
+      exportRenderer.setClearColor(
+        0x000000,
+        1
+      );
+
+      exportRenderer.render(
+        exportScene,
+        exportCamera
+      );
+
+      try {
+        const dataURL =
+          exportRenderer
+            .domElement
+            .toDataURL(
+              "image/png"
+            );
+
+        /*
+          Acode 1.13.5 cannot handle blob:
+          download URLs.
+
+          The PNG is therefore opened directly
+          as a data URL instead.
+        */
+        const imageWindow =
+          window.open(
+            dataURL,
+            "_blank"
+          );
+
+        if (!imageWindow) {
+          const link =
+            document.createElement(
+              "a"
+            );
+
+          link.href =
+            dataURL;
+
+          link.target =
+            "_blank";
+
+          link.rel =
+            "noopener";
+
+          link.style.display =
+            "none";
+
+          document.body.appendChild(
+            link
+          );
+
+          link.click();
+
+          document.body.removeChild(
+            link
+          );
+        }
+
+        exportButton.disabled =
+          false;
+
+        exportButton.textContent =
+          "↓ PNG";
+
+        exportGeometry.dispose();
+        exportMaterial.dispose();
+        exportRenderer.dispose();
+
+      } catch (error) {
+        console.error(
+          "PNG export failed:",
+          error
+        );
+
+        exportButton.disabled =
+          false;
+
+        exportButton.textContent =
+          "↓ PNG";
+
+        exportGeometry.dispose();
+        exportMaterial.dispose();
+        exportRenderer.dispose();
+
+        alert(
+          "PNG export could not be opened."
+        );
+      }
+    }
+
+    function setupZoom() {
+      renderer.domElement.addEventListener(
+        "wheel",
+        function(event) {
+          event.preventDefault();
+
+          const amount =
+            Math.exp(
+              event.deltaY *
+              0.0012
+            );
+
+          zoom *= amount;
+
+          zoom =
+            THREE.MathUtils.clamp(
+              zoom,
+              MIN_ZOOM,
+              MAX_ZOOM
+            );
+
+          camera.position.z =
+            zoom;
+        },
+        {
+          passive: false
+        }
+      );
+
+      renderer.domElement.addEventListener(
+        "touchstart",
+        function(event) {
+          if (
+            event.touches.length ===
+            2
+          ) {
+            pinchStartDistance =
+              getTouchDistance(
+                event.touches
+              );
+
+            pinchStartZoom =
+              zoom;
+          }
+        },
+        {
+          passive: false
+        }
+      );
+
+      renderer.domElement.addEventListener(
+        "touchmove",
+        function(event) {
+          if (
+            event.touches.length ===
+            2
+          ) {
+            event.preventDefault();
+
+            const currentDistance =
+              getTouchDistance(
+                event.touches
+              );
+
+            if (
+              !pinchStartDistance ||
+              pinchStartDistance <= 0
+            ) {
+              return;
+            }
+
+            const ratio =
+              pinchStartDistance /
+              currentDistance;
+
+            zoom =
+              pinchStartZoom *
+              ratio;
+
+            zoom =
+              THREE.MathUtils.clamp(
+                zoom,
+                MIN_ZOOM,
+                MAX_ZOOM
+              );
+
+            camera.position.z =
+              zoom;
+          }
+        },
+        {
+          passive: false
+        }
+      );
+
+      renderer.domElement.addEventListener(
+        "touchend",
+        function(event) {
+          if (
+            event.touches.length <
+            2
+          ) {
+            pinchStartDistance =
+              null;
+          }
+        },
+        {
+          passive: false
+        }
+      );
+
+      renderer.domElement.addEventListener(
+        "touchcancel",
+        function() {
+          pinchStartDistance =
+            null;
+        },
+        {
+          passive: false
+        }
+      );
+    }
+
+    function getTouchDistance(
+      event
+    ) {
+      const dx =
+        event.touches[0].clientX -
+        event.touches[1].clientX;
+
+      const dy =
+        event.touches[0].clientY -
+        event.touches[1].clientY;
+
+      return Math.sqrt(
+        dx * dx +
+        dy * dy
+      );
+    }
+
+    function onResize() {
+      camera.aspect =
+        window.innerWidth /
+        window.innerHeight;
+
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+      );
+
+      renderer.setPixelRatio(
+        Math.min(
+          window.devicePixelRatio || 1,
+          2
+        )
+      );
+
+      material.size =
+        window.innerWidth < 600
+          ? 0.065
+          : 0.055;
+    }
+
+    function animate() {
+      requestAnimationFrame(
+        animate
+      );
+
+      if (!morphing) {
+        particles.rotation.y +=
+          0.0018;
+
+        particles.rotation.x +=
+          0.00035;
+      } else {
+        particles.rotation.y *=
+          0.995;
+
+        particles.rotation.x *=
+          0.995;
+      }
+
+      renderer.render(
+        scene,
+        camera
+      );
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
